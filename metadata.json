@@ -1,0 +1,8 @@
+{
+  "name": "Remix Ahelna - أهلنا",
+  "description": "A family chat and voice assistant supporting Emirati families with newborns, grounded in local culture and traditions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
