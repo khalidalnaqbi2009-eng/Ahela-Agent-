@@ -627,76 +627,32 @@ ${knowledgeBase}
 
     const agent2Text = agent2Response.text ? agent2Response.text.trim() : "";
 
-    // 4. Assemble Strictly Formatted Output:
-    // **Agent 1: Research Findings**
-    // * Bulleted facts with inline numerical markers [1].
-    //
-    // **Agent 2: Shareable Family Note**
-    // > Clean, warm WhatsApp-ready paragraph carrying the markers [1].
-    //
-    // ---
-    // **Verified Sources**
-    // * [1] Source Name: Exact URL
-
+    // 4. Assemble Unified Output in one or more paragraphs without Agent 1 / Agent 2 headers
     let formattedOutput = "";
 
     if (isNotFound) {
-      if (isEn) {
-        formattedOutput = `**Agent 1: Research Findings**
-* The requested micro-local entity or detail is not found in the verified primary heritage archives [1].
-
-**Agent 2: Shareable Family Note**
-> ${agent2Text || "This specific detail is not found in our verified heritage archives. If your family has an oral account, interview recording, or document about this, please share it so we can document it accurately."}
-
----
-**Verified Sources**
-* [1] National Library & Archives (NLA): https://www.nla.ae`;
-      } else {
-        formattedOutput = `**Agent 1: نتائج البحث والتوثيق (Research Findings)**
-* الكيان أو المعلومة العائلية المحددة غير متوفرة في السجلات التراثية المعتمدة [1].
-
-**Agent 2: رسالة عائلية للمشاركة (Shareable Family Note)**
-> ${agent2Text || "هذه المعلومة المحددة غير مسجلة في الأرشيف التراثي المعتمد. يرجى تزويدنا برواية شفوية أو وثيقة عائلية لحفظها وتوثيقها بدقة."}
-
----
-**المصادر المعتمدة (Verified Sources)**
-* [1] الأرشيف والمكتبة الوطنية: https://www.nla.ae`;
-      }
+      const notFoundBody = agent2Text || (isEn 
+        ? "The requested information is not recorded in the verified heritage archives. If your family has an oral account, interview recording, or historical document about this topic, please share it so it can be documented accurately."
+        : "المعلومة المطلوبة غير مسجلة في الأرشيف التراثي المعتمد. يرجى تزويدنا برواية شفوية أو وثيقة عائلية لحفظها وتوثيقها بدقة.");
+      
+      formattedOutput = isEn
+        ? `${notFoundBody}\n\n---\n**Verified Sources**\n* [1] National Library & Archives (NLA): https://www.nla.ae`
+        : `${notFoundBody}\n\n---\n**المصادر المعتمدة**\n* [1] الأرشيف والمكتبة الوطنية: https://www.nla.ae`;
     } else {
-      // Parse Agent 1 findings and sources
-      let findingsSection = "";
+      // Extract sources list from Agent 1 output
       let sourcesSection = "";
-
-      if (rawAgent1Text.includes("RESEARCH_FINDINGS:") && rawAgent1Text.includes("SOURCES:")) {
+      if (rawAgent1Text.includes("SOURCES:")) {
         const parts = rawAgent1Text.split("SOURCES:");
-        findingsSection = parts[0].replace("RESEARCH_FINDINGS:", "").trim();
         sourcesSection = parts[1].trim();
       } else {
-        findingsSection = rawAgent1Text;
         sourcesSection = `* [1] DCT Abu Dhabi: https://dct.gov.ae/en/what.we.do/culture/tangible.intangible.heritage.aspx\n* [2] National Library & Archives: https://www.nla.ae/en/news/the-national-archives-documents-the-eid-customs-and-rituals-in-the-past/`;
       }
 
-      if (isEn) {
-        formattedOutput = `**Agent 1: Research Findings**
-${findingsSection}
+      const mainParagraphText = agent2Text.replace(/^>\s*/gm, '').trim();
 
-**Agent 2: Shareable Family Note**
-> ${agent2Text}
-
----
-**Verified Sources**
-${sourcesSection}`;
-      } else {
-        formattedOutput = `**Agent 1: نتائج البحث والتوثيق (Research Findings)**
-${findingsSection}
-
-**Agent 2: رسالة عائلية للمشاركة (Shareable Family Note)**
-> ${agent2Text}
-
----
-**المصادر المعتمدة (Verified Sources)**
-${sourcesSection}`;
-      }
+      formattedOutput = isEn
+        ? `${mainParagraphText}\n\n---\n**Verified Sources**\n${sourcesSection}`
+        : `${mainParagraphText}\n\n---\n**المصادر المعتمدة**\n${sourcesSection}`;
     }
 
     res.json({ 
@@ -712,93 +668,23 @@ ${sourcesSection}`;
     
     if (isEn) {
       if (lowerPrompt.includes("swaddl") || lowerPrompt.includes("mehad") || lowerPrompt.includes("qemat")) {
-        fallbackText = `**Agent 1: Research Findings**
-* Al-Mehad (Al-Qemat) is the traditional snug swaddling of newborns with cool, breathable organic cotton to secure the body and soothe startle reflexes [1].
-* It promotes deep, peaceful infant sleep by replicating gentle maternal containment [1].
-
-**Agent 2: Shareable Family Note**
-> In our Emirati heritage, Al-Mehad swaddling with pure organic cotton keeps the little one snug, calms their startle reflex, and ensures deep, peaceful sleep [1].
-
----
-**Verified Sources**
-* [1] DCT Abu Dhabi: https://dct.gov.ae/en/what.we.do/culture/tangible.intangible.heritage.aspx`;
+        fallbackText = `In our Emirati heritage, Al-Mehad (swaddling) with cool and pure organic cotton secures the infant's body, calms natural startle reflexes, and fosters deep, restful sleep [1].\n\n---\n**Verified Sources**\n* [1] DCT Abu Dhabi: https://dct.gov.ae/en/what.we.do/culture/tangible.intangible.heritage.aspx`;
       } else if (lowerPrompt.includes("sidr") || lowerPrompt.includes("bath") || lowerPrompt.includes("rash")) {
-        fallbackText = `**Agent 1: Research Findings**
-* Sidr leaf baths use warm water steeped with powdered organic Sidr leaves as a natural cleanser [1].
-* It is traditionally used to soothe sensitive infant skin and alleviate summer heat rashes [1].
-
-**Agent 2: Shareable Family Note**
-> A warm bath with natural Sidr leaves is our grandmothers' trusted remedy to soothe baby's delicate skin, cool heat rashes, and offer natural comfort [1].
-
----
-**Verified Sources**
-* [1] DCT Abu Dhabi: https://dct.gov.ae/en/what.we.do/culture/tangible.intangible.heritage.aspx`;
+        fallbackText = `A gentle warm bath steeped with natural powdered Sidr leaves is a time-tested Emirati practice to soothe delicate infant skin, alleviate summer heat discomfort, and offer natural cleansing [1].\n\n---\n**Verified Sources**\n* [1] DCT Abu Dhabi: https://dct.gov.ae/en/what.we.do/culture/tangible.intangible.heritage.aspx`;
       } else if (lowerPrompt.includes("gas") || lowerPrompt.includes("colic") || lowerPrompt.includes("massage") || lowerPrompt.includes("crying")) {
-        fallbackText = `**Agent 1: Research Findings**
-* Baby massage (الدهان الحنون) involves applying warm olive or sesame oil with gentle circular strokes on the abdomen and back [1].
-* It eases infant gas, relieves colic, and aids healthy blood circulation [1].
-
-**Agent 2: Shareable Family Note**
-> A gentle massage with warm olive oil on baby's tummy and back helps ease colic, release trapped gas, and bring instant calm [1].
-
----
-**Verified Sources**
-* [1] National Library & Archives (NLA): https://www.nla.ae/en/our-history/oral-history/overview/overview/`;
+        fallbackText = `Traditional baby massage (الدهان الحنون) using warm olive or sesame oil applied in gentle circular strokes on the tummy and back helps relieve infant gas, soothe colic, and promote relaxed digestion [1].\n\n---\n**Verified Sources**\n* [1] National Library & Archives (NLA): https://www.nla.ae/en/our-history/oral-history/overview/overview/`;
       } else {
-        fallbackText = `**Agent 1: Research Findings**
-* Traditional Emirati newborn practices emphasize natural maternal care, postpartum nutrition (such as Habat Al-Hamra and Harees), and supportive family solidarity [1].
-
-**Agent 2: Shareable Family Note**
-> Our heritage cherishes postpartum wellness and newborn care through wholesome nutrition, family togetherness, and time-tested soothing customs [1].
-
----
-**Verified Sources**
-* [1] UAE Official Portal: https://u.ae/en/about-the-uae/culture/arab-and-islamic-heritage`;
+        fallbackText = `Traditional Emirati family care emphasizes wholesome postpartum nutrition, maternal wellness, and nurturing newborn customs [1]. Please specify the custom or care topic you would like to explore.\n\n---\n**Verified Sources**\n* [1] UAE Official Portal: https://u.ae/en/about-the-uae/culture/arab-and-islamic-heritage`;
       }
     } else {
       if (lowerPrompt.includes("مهاد") || lowerPrompt.includes("قماط") || lowerPrompt.includes("نوم") || lowerPrompt.includes("فزع")) {
-        fallbackText = `**Agent 1: نتائج البحث والتوثيق (Research Findings)**
-* المهاد (القماط) هو لف الرضيع بقماش قطني بارد وخفيف لشد الجسم وتثبيته [1].
-* يساعد القماط في تهدئة فزعات النوم المفاجئة وتوفير نوم عميق ومريح للطفل [1].
-
-**Agent 2: رسالة عائلية للمشاركة (Shareable Family Note)**
-> في موروثنا الإماراتي الأصيل، المهاد بالقطن البارد يشد جسم الرضيع ويثبت نومته ويحميه من الفزعات لينعم بنوم هادئ ومريح [1].
-
----
-**المصادر المعتمدة (Verified Sources)**
-* [1] دائرة الثقافة والسياحة - أبوظبي: https://dct.gov.ae/en/what.we.do/culture/tangible.intangible.heritage.aspx`;
+        fallbackText = `في موروثنا الإماراتي الأصيل، يُعد المهاد (القماط) بالقطن العضوي البارد من أهم وسائل رعاية الرضيع، حيث يشد جسمه ويثبت نومته ويهدئ فزعات النوم المفاجئة لينعم بنوم عميق وهادئ [1].\n\n---\n**المصادر المعتمدة**\n* [1] دائرة الثقافة والسياحة - أبوظبي: https://dct.gov.ae/en/what.we.do/culture/tangible.intangible.heritage.aspx`;
       } else if (lowerPrompt.includes("سدر") || lowerPrompt.includes("حساسية") || lowerPrompt.includes("حرارة") || lowerPrompt.includes("غسيل")) {
-        fallbackText = `**Agent 1: نتائج البحث والتوثيق (Research Findings)**
-* مغطس ورق السدر المطحون بماء دافئ يُعد مطهراً طبيعياً لبشرة الرضيع الحساسة [1].
-* يُستخدم لتبريد حرارة الصيف وتهدئة حساسية الجلد عند الأطفال [1].
-
-**Agent 2: رسالة عائلية للمشاركة (Shareable Family Note)**
-> مغطس السدر الدافئ هو سنع أمهاتنا وجداتنا لتطهير بشرة الرضيع وتبريد حرارة الصيف وتهدئة أي حساسية طبيعياً وبكل أمان [1].
-
----
-**المصادر المعتمدة (Verified Sources)**
-* [1] دائرة الثقافة والسياحة - أبوظبي: https://dct.gov.ae/en/what.we.do/culture/tangible.intangible.heritage.aspx`;
+        fallbackText = `مغطس ورق السدر المطحون بماء دافئ هو سنع أمهاتنا وجداتنا لتطهير بشرة الرضيع الحساسة وتبريد حرارة الصيف وتهدئة تهيجات الجلد طبيعياً وبكل أمان [1].\n\n---\n**المصادر المعتمدة**\n* [1] دائرة الثقافة والسياحة - أبوظبي: https://dct.gov.ae/en/what.we.do/culture/tangible.intangible.heritage.aspx`;
       } else if (lowerPrompt.includes("مغص") || lowerPrompt.includes("غازات") || lowerPrompt.includes("دهان") || lowerPrompt.includes("مساج") || lowerPrompt.includes("بكاء")) {
-        fallbackText = `**Agent 1: نتائج البحث والتوثيق (Research Findings)**
-* الدهان الحنون (المساج) بزيت الزيتون أو السمسم الدافئ على البطن والظهر يطرد الغازات ويلين العضلات [1].
-* يُخفف من نوبات المغص والبكاء المتكرر لدى الرضع [1].
-
-**Agent 2: رسالة عائلية للمشاركة (Shareable Family Note)**
-> مساج دافئ خفيف بزيت الزيتون على بطن الرضيع وظهره يطرد الغازات ويريح بطنه من المغص بإذن الله [1].
-
----
-**المصادر المعتمدة (Verified Sources)**
-* [1] الأرشيف والمكتبة الوطنية: https://www.nla.ae/en/our-history/oral-history/overview/overview/`;
+        fallbackText = `يُعد الدهان الحنون (المساج) بزيت الزيتون الدافئ على بطن الرضيع وظهره بحركات دائرية خفيفة علاجاً تراثياً فعالاً لطرد الغازات وتهدئة نوبات المغص بإذن الله [1].\n\n---\n**المصادر المعتمدة**\n* [1] الأرشيف والمكتبة الوطنية: https://www.nla.ae/en/our-history/oral-history/overview/overview/`;
       } else {
-        fallbackText = `**Agent 1: نتائج البحث والتوثيق (Research Findings)**
-* ترتكز رعاية المواليد في التراث الإماراتي على سنع الأسرة الممتدة، تغذية النفاس (الحبة الحمراء والهريس)، والأهازيج التهدئية [1].
-
-**Agent 2: رسالة عائلية للمشاركة (Shareable Family Note)**
-> يزخر سنعنا الإماراتي بأجمل عادات رعاية الأم والطفل، والتغذية السليمة، والترابط الأسري المتوارث جيلاً بعد جيل [1].
-
----
-**المصادر المعتمدة (Verified Sources)**
-* [1] البوابة الرسمية لدولة الإمارات: https://u.ae/en/about-the-uae/culture/arab-and-islamic-heritage`;
+        fallbackText = `يزخر موروثنا الإماراتي بعادات أصيلة في رعاية الأم والوليد، والتغذية السليمة، والترابط الأسري المتوارث جيلاً بعد جيل [1]. تفضل بطرح سؤالك عن أي ممارسة تراثية ترغب بمعرفتها.\n\n---\n**المصادر المعتمدة**\n* [1] البوابة الرسمية لدولة الإمارات: https://u.ae/en/about-the-uae/culture/arab-and-islamic-heritage`;
       }
     }
     
